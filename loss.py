@@ -1,5 +1,6 @@
 import torch
 from bicubic import BicubicDownSample
+from lpips import PerceptualLoss
 
 class LossBuilder(torch.nn.Module):
     def __init__(self, ref_im, loss_str, eps):
@@ -12,6 +13,7 @@ class LossBuilder(torch.nn.Module):
         self.ref_im = ref_im
         self.parsed_loss = [loss_term.split('*') for loss_term in loss_str.split('+')]
         self.eps = eps
+        self.PL = PerceptualLoss()
 
     # Takes a list of tensors, flattens them, and concatenates them into a vector
     # Used to calculate euclidian distance between lists of tensors
@@ -20,6 +22,12 @@ class LossBuilder(torch.nn.Module):
         return torch.cat([x.flatten() for x in l], dim=0)
 
     def _loss_l2(self, gen_im_lr, ref_im, **kwargs):
+        if 0: # check
+            print(f"in L2: --------------> type(gen_im_lr) {type(gen_im_lr)}")
+            print(f"in L2: --------------> type(ref_im) {type(ref_im)}")
+            print(f"in L2: --------------> gen_im_lr.shape, {gen_im_lr.shape}")
+            print(f"in L2: --------------> ref_im.shape, {ref_im.shape}")
+            assert 1==2
         return ((gen_im_lr - ref_im).pow(2).mean((1, 2, 3)).clamp(min=self.eps).sum())
 
     def _loss_l1(self, gen_im_lr, ref_im, **kwargs):
@@ -38,6 +46,10 @@ class LossBuilder(torch.nn.Module):
             D = ((D.pow(2)*512).mean((1, 2))/8.).sum()
             return D
 
+    def _loss_perceptual(self, gen_im_lr, ref_im, **kwargs):
+        plLoss = self.PL(gen_im_lr, ref_im)
+        return plLoss
+
     def forward(self, latent, gen_im):
         var_dict = {'latent': latent,
                     'gen_im_lr': self.D(gen_im),
@@ -48,10 +60,13 @@ class LossBuilder(torch.nn.Module):
             'L2': self._loss_l2,
             'L1': self._loss_l1,
             'GEOCROSS': self._loss_geocross,
+            'PERCEPTUAL': self._loss_perceptual,
         }
         losses = {}
         for weight, loss_type in self.parsed_loss:
-            tmp_loss = loss_fun_dict[loss_type](**var_dict)
+            tmp_loss = loss_fun_dict[loss_type](**var_dict).min()
             losses[loss_type] = tmp_loss
+            if 0:#check
+                print(f"================================> {loss_type} {type(tmp_loss)} {tmp_loss}")
             loss += float(weight)*tmp_loss
         return loss, losses

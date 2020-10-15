@@ -78,5 +78,5 @@ for ref_im, ref_im_name in dataloader:
         #out_im = model(ref_im,**kwargs)
         for j,(HR,LR) in enumerate(model(ref_im,**kwargs)):
             for i in range(kwargs["batch_size"]):
-                toPIL(HR[i].cpu().detach().clamp(0, 1)).save(
-                    out_path / f"{ref_im_name[i]}.png")
+                # toPIL(HR[i].cpu().detach().clamp(0, 1)).save(out_path / f"{ref_im_name[i]}.png")
+                toPIL(HR[i].cpu().detach().clamp(0, 1)).save(out_path / f"ls:({kwargs['loss_str']})_tl:({str(kwargs['tile_latent'])}).png")

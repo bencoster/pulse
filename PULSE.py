@@ -20,8 +20,11 @@ class PULSE(torch.nn.Module):
         cache_dir = Path(cache_dir)
         cache_dir.mkdir(parents=True, exist_ok = True)
         if self.verbose: print("Loading Synthesis Network")
-        with open_url("https://drive.google.com/uc?id=1TCViX1YpQyRsklTVYEJwdbmK91vklCo8", cache_dir=cache_dir, verbose=verbose) as f:
-            self.synthesis.load_state_dict(torch.load(f))
+        #with open_url("https://drive.google.com/uc?id=1TCViX1YpQyRsklTVYEJwdbmK91vklCo8", cache_dir=cache_dir, verbose=verbose) as f:
+        #    self.synthesis.load_state_dict(torch.load(f))
+        if 1: # crz load model
+            synthesis_model_path = "./cache/synthesis.pt"
+            self.synthesis.load_state_dict(torch.load(synthesis_model_path))
 
         for param in self.synthesis.parameters():
             param.requires_grad = False
@@ -149,6 +152,9 @@ class PULSE(torch.nn.Module):
             # Calculate Losses
             loss, loss_dict = loss_builder(latent_in, gen_im)
             loss_dict['TOTAL'] = loss
+            if 0: # 打印各个loss的具体数值
+                for key, value in loss_dict.items():
+                    print(f"---> Loss {key} {value}")
 
             # Save best summary for log
             if(loss < min_loss):

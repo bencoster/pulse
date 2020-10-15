@@ -60,4 +60,4 @@ dependencies:
   - zstd=1.3.7=h5bba6e5_0
   - pip:
     - dlib==19.19.0
-prefix: /Users/sachit/opt/miniconda3/envs/pulse
+prefix: /home/glint/anaconda3/envs/pulse
