@@ -86,14 +86,14 @@ do
                 for param4 in ${param4Array[*]}
                 do
                     echo "==========================================="
-                    echo running ... $param0 $param1 $param2 $param3
+                    echo running ... $param0 $param1 $param2 $param3 $param4
                     python run.py -loss_str "$param0*L2+0$param1*GEOCROSS+0$param2*PERCEPTUAL+0$param3*ARC" \
                                 -output_dir ./runs_synthesis \
                                 -steps 500 \
                                 -num_trainable_noise_layers $param4
 
                     echo "==========================================="
-                    echo running ... $param0 $param1 $param2 $param3 -tile_latent
+                    echo running ... $param0 $param1 $param2 $param3 $param4 -tile_latent
                     python run.py -loss_str "$param0*L2+0$param1*GEOCROSS+0$param2*PERCEPTUAL+0$param3*ARC" \
                                 -tile_latent \
                                 -output_dir ./runs_synthesis \

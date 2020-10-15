@@ -49,7 +49,7 @@ parser.add_argument('-lr_schedule', type=str, default='linear1cycledrop', help='
 parser.add_argument('-save_intermediate', action='store_true', help='Whether to store and save intermediate HR and LR images during optimization')
 
 kwargs = vars(parser.parse_args())
-saveName = f"ls:({kwargs['loss_str']})_tl:({str(kwargs['tile_latent'])}).png"
+saveName = f"ls:({kwargs['loss_str']})_tl:({str(kwargs['tile_latent'])})_bnl({kwargs['bad_noise_layers']}).png"
 if os.path.exists(os.path.join(kwargs["output_dir"], saveName)):
     print("This situation has been considered.")
     exit(0)

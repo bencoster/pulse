@@ -4,3 +4,9 @@ __pycache__/*
 runs/*
 cache/*
 realpics/*
+*.swp
+crz_tuning.py
+crz_tuning_test.sh
+runs_synthesis/
+test.sh
+test_lpips.py
