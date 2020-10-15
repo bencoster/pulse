@@ -6,11 +6,12 @@ from PIL import Image
 import torchvision
 from math import log10, ceil
 import argparse
+import os
 
 class Images(Dataset):
     def __init__(self, root_dir, duplicates):
         self.root_path = Path(root_dir)
-        self.image_list = list(self.root_path.glob("*.png"))
+        self.image_list = list(self.root_path.glob("*.jpg"))
         self.duplicates = duplicates # Number of times to duplicate the image in the dataset to produce multiple HR images
 
     def __len__(self):
@@ -43,11 +44,15 @@ parser.add_argument('-tile_latent', action='store_true', help='Whether to forcib
 parser.add_argument('-bad_noise_layers', type=str, default="17", help='List of noise layers to zero out to improve image quality')
 parser.add_argument('-opt_name', type=str, default='adam', help='Optimizer to use in projected gradient descent')
 parser.add_argument('-learning_rate', type=float, default=0.4, help='Learning rate to use during optimization')
-parser.add_argument('-steps', type=int, default=100, help='Number of optimization steps')
+parser.add_argument('-steps', type=int, default=500, help='Number of optimization steps')
 parser.add_argument('-lr_schedule', type=str, default='linear1cycledrop', help='fixed, linear1cycledrop, linear1cycle')
 parser.add_argument('-save_intermediate', action='store_true', help='Whether to store and save intermediate HR and LR images during optimization')
 
 kwargs = vars(parser.parse_args())
+saveName = f"ls:({kwargs['loss_str']})_tl:({str(kwargs['tile_latent'])}).png"
+if os.path.exists(os.path.join(kwargs["output_dir"], saveName)):
+    print("This situation has been considered.")
+    exit(0)
 
 dataset = Images(kwargs["input_dir"], duplicates=kwargs["duplicates"])
 out_path = Path(kwargs["output_dir"])
@@ -79,4 +84,4 @@ for ref_im, ref_im_name in dataloader:
         for j,(HR,LR) in enumerate(model(ref_im,**kwargs)):
             for i in range(kwargs["batch_size"]):
                 # toPIL(HR[i].cpu().detach().clamp(0, 1)).save(out_path / f"{ref_im_name[i]}.png")
-                toPIL(HR[i].cpu().detach().clamp(0, 1)).save(out_path / f"ls:({kwargs['loss_str']})_tl:({str(kwargs['tile_latent'])}).png")
+                toPIL(HR[i].cpu().detach().clamp(0, 1)).save(out_path / saveName)

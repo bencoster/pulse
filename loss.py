@@ -1,6 +1,29 @@
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
 from bicubic import BicubicDownSample
 from lpips import PerceptualLoss
+from InsightFace_Pytorch.model import MobileFaceNet
+
+class Arc_loss(torch.nn.Module):
+    """ Arc loss to preserve identity.
+    """
+    def __init__(self,
+                weight_path = 'weights/model_mobilefacenet.pth'):
+        super(Arc_loss, self).__init__()
+        self.pretrained_arc_face = MobileFaceNet(512)
+        self.pretrained_arc_face.load_state_dict(torch.load(weight_path))
+        self.pretrained_arc_face.eval()
+        self.loss = torch.nn.CosineSimilarity()
+
+    def forward(self, x, y):
+        self.pretrained_arc_face = self.pretrained_arc_face.to(x)
+        x = F.interpolate(x, (112,112))
+        y = F.interpolate(y, (112,112))
+        with torch.no_grad():
+            x_arc_face = self.pretrained_arc_face(x)
+            y_arc_face = self.pretrained_arc_face(y)
+        return (1 - self.loss(x_arc_face, y_arc_face)).mean()
 
 class LossBuilder(torch.nn.Module):
     def __init__(self, ref_im, loss_str, eps):
@@ -14,6 +37,7 @@ class LossBuilder(torch.nn.Module):
         self.parsed_loss = [loss_term.split('*') for loss_term in loss_str.split('+')]
         self.eps = eps
         self.PL = PerceptualLoss()
+        self.ArcL = Arc_loss()
 
     # Takes a list of tensors, flattens them, and concatenates them into a vector
     # Used to calculate euclidian distance between lists of tensors
@@ -49,6 +73,10 @@ class LossBuilder(torch.nn.Module):
     def _loss_perceptual(self, gen_im_lr, ref_im, **kwargs):
         plLoss = self.PL(gen_im_lr, ref_im)
         return plLoss
+    
+    def _loss_arc(self, gen_im_lr, ref_im, **kwargs):
+        arcLoss = self.ArcL(gen_im_lr, ref_im)
+        return arcLoss
 
     def forward(self, latent, gen_im):
         var_dict = {'latent': latent,
@@ -61,6 +89,7 @@ class LossBuilder(torch.nn.Module):
             'L1': self._loss_l1,
             'GEOCROSS': self._loss_geocross,
             'PERCEPTUAL': self._loss_perceptual,
+            'ARC': self._loss_arc,
         }
         losses = {}
         for weight, loss_type in self.parsed_loss:
@@ -70,3 +99,4 @@ class LossBuilder(torch.nn.Module):
                 print(f"================================> {loss_type} {type(tmp_loss)} {tmp_loss}")
             loss += float(weight)*tmp_loss
         return loss, losses
+

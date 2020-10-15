@@ -132,10 +132,15 @@ class PULSE(torch.nn.Module):
         start_t = time.time()
         gen_im = None
 
-
+        
         if self.verbose: print("Optimizing")
-        for j in range(steps):
+        print("steps:0", end='', flush=True)
+        step_dis_interval = 5
+        for j in range(steps):      
+            if j % step_dis_interval == 0 and j != 0:
+                print(f",{j}", end='', flush=True)
             opt.opt.zero_grad()
+
 
             # Duplicate latent in case tile_latent = True
             if (tile_latent):
@@ -162,9 +167,8 @@ class PULSE(torch.nn.Module):
                 best_summary = f'BEST ({j+1}) | '+' | '.join(
                 [f'{x}: {y:.4f}' for x, y in loss_dict.items()])
                 best_im = gen_im.clone()
-
             loss_l2 = loss_dict['L2']
-
+            
             if(loss_l2 < min_l2):
                 min_l2 = loss_l2
 
@@ -179,7 +183,7 @@ class PULSE(torch.nn.Module):
         total_t = time.time()-start_t
         current_info = f' | time: {total_t:.1f} | it/s: {(j+1)/total_t:.2f} | batchsize: {batch_size}'
         if self.verbose: print(best_summary+current_info)
-        if(min_l2 <= eps):
-            yield (gen_im.clone().cpu().detach().clamp(0, 1),loss_builder.D(best_im).cpu().detach().clamp(0, 1))
-        else:
-            print("Could not find a face that downscales correctly within epsilon")
+        #if(min_l2 <= eps):
+        yield (best_im.clone().cpu().detach().clamp(0, 1),loss_builder.D(best_im).cpu().detach().clamp(0, 1))
+        #else:
+        #    print("Could not find a face that downscales correctly within epsilon")
